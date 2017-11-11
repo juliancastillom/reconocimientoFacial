@@ -3,6 +3,10 @@ var width = 280;
 var height = 220;
 var faceMode = affdex.FaceDetectorMode.LARGE_FACES;
 
+var aburrido = 0;
+var feliz = 0;
+var sorprendido = 0;
+var neutro = 0;
 // Construct a CameraDetector and specify the image width / height and face detector mode.
 var detector = new affdex.CameraDetector(divRoot, width, height, faceMode);
 
@@ -82,12 +86,13 @@ $('#results').html("");
       return val.toFixed ? Number(val.toFixed(0)) : val;
     })
     var types = JSON.parse(emotions);
-    log('#results', 'Alegria: '+ types.joy);
-    log('#results', "Appearance: " + appearance);
-    log('#results', "Expressions: " + expressions);
+    //log('#results', 'Alegria: '+ types.joy);
+    //log('#results', "Appearance: " + appearance);
+    //log('#results', "Expressions: " + expressions);
     log('#results', "Emotions: " + emotions);
-    log('#results', "Emoji: " + faces[0].emojis.dominantEmoji);
-    getMood(types)
+    //log('#results', "Emoji: " + faces[0].emojis.dominantEmoji);
+    //getMood2(types)
+	getMood(types)
     drawFeaturePoints(image, faces[0].featurePoints);
   }
 });
@@ -117,47 +122,126 @@ function getMood(types) {
   var fear = types.fear;
   var surprise = types.surprise;
 
-  var sum = (joy + sadness + disgust + contempt + anger + fear + surprise)
-  var bademo = (sadness + disgust + anger) / 3
+  
+  
   var emotion;
+  
+  //Se inicializan las variables que se tendrán en cuenta para definir las emociones
+  
+  var suma = (joy + sadness + disgust + contempt + anger + fear + surprise)
+  var felicidad = joy - sadness - disgust - anger
+  var promedio1 = (suma - surprise) / 6
+  var promedio2 = (suma - fear) / 6
+  var promedio3 = (suma - disgust) / 6
+  var promedio4 = (suma - sadness) / 6
+  var promedio5 = (suma - anger) / 6
+  var promedio6 = (suma - contempt) / 6
 
-  if (sum < 30) {
-    emotion = "OK"
+  if (suma < 8) {
+    emotion = "Neutro";
+	neutro = neutro + 1;
   }
-  else {
-    var happiness = joy - sadness - disgust - anger
-    if (happiness > 0) {
-      emotion = "Feliz"
-    }
-    else if ((fear > 20 || surprise > 20) && (bademo < fear || bademo < surprise)) {
-      if (surprise - fear > 20)
-        emotion = "Sorprendido"
-      else if (surprise - fear < -20)
-        emotion = "Asustado"
-      else
-        emotion = "Espantado"
-    }
-    else {
-      var dislike = (disgust + contempt) / 2
-      var rage = (anger + disgust) / 2
-      if (sadness > rage) {
-        if (sadness > dislike)
-          emotion = "Triste"
-        else if (contempt > disgust)
-          emotion = "Despreciado"
-        else
-          emotion = "Disgustado"
-      }
-      else {
-        if (rage > 95)
-          emotion = "¡ Boooooooom !"
-        else if (rage > 70)
-          emotion = "Con rabia..."
-        else
-          emotion = "Enojado"
-      }
-    }
+   
+  else if (felicidad > 0){
+	  emotion = "Feliz";
+	  feliz = feliz + 1;
+  }	
+  
+  else if ((surprise > promedio1) || (fear > promedio2)){
+	  emotion = "Sorprendido"
+	  sorprendido = sorprendido + 1;
   }
+  
+  else if ((disgust > promedio3) || (sadness > promedio4) || (anger > promedio5)||(contempt > promedio6)){
+	  emotion = "Aburrido"
+	  aburrido = aburrido + 1;
+  }
+  
 
   log('#results', "Humor: " + emotion);
+  //Se envia la emocion por ajax a un archivo en php el cual realiza un INSERT en la base de datos
+  Consulta();
 }
+
+
+//Envio datos
+function Consulta(){
+//-----------------------------------------------------------------------
+// 2) Send a http request with AJAX http://api.jquery.com/jQuery.ajax/
+//-----------------------------------------------------------------------
+	var emocionMax = 0;
+	var idEmocion = 0;
+	var idUser = 0;
+	var idVideo = 0;
+	var categoria = "Matematicas";
+	var emocion = 0;
+	if (aburrido > emocionMax)
+	{
+		emocionMax = aburrido;
+		emocion = "aburrido";
+	}
+	
+	if (feliz > emocionMax)
+	{
+		emocionMax = feliz;
+		emocion = "feliz";
+	}
+	if (sorprendido > emocionMax)
+	{
+		emocionMax = sorprendido;
+		emocion = "sorprendido";
+	}
+	if (neutro > emocionMax)
+	{
+		emocionMax = neutro;
+		emocion = "neutro";
+	}
+	/* log('#results', "idEmocion: " + idEmocion+" prueba1");
+	log('#results', "idUser: " + idUser);
+	log('#results', "idVideo: " + idVideo);	
+	log('#results', "categoria: " + categoria);*/
+	log('#results', "emocion: " + emocion); 
+	log('#results', "Aburrido: " + aburrido);
+	log('#results', "Feliz: " + feliz);
+	log('#results', "Sorprendido: " + sorprendido);
+	log('#results', "Neutro: " + neutro);
+	//http://localhost/AffectivaDemo/DataBase/AddEmotion.php?idEmocion=4&idUser=3&idVideo=2&categoria=categoria&emocion=emocion
+//alert(emotion);
+  /*$.ajax({
+      url: 'http://localhost/AffectivaDemoV2/DataBase/AddEmotion.php?idEmocion='+idEmocion+'&idUser='+ idUser+',&idVideo='+idVideo+',&categoria='+categoria+'&emocion='+emocion,
+	  //http://localhost/main.php?email=$email_address&event_id=$event_id,
+      type: 'post',
+      contentType: "application/json; charset=utf-8",
+      dataType: "json",
+	  //data: {"idEmocion:"+idEmocion+",idUser:"+ idUser+",idVideo:"+idVideo+",categoria:"+categoria+",emocion:"+emocion},
+	  data: {idEmocion,idUser,idVideo,categoria,emocion},
+	  complete: function (rData) {
+          //alert("Data: " + rData.toString());
+      }
+  });
+*/
+}
+
+/* function getMood2() {
+	numero=Math.floor((Math.random() * 4) + 1);
+	//log('#results', "Numero: " + numero);
+	if (numero == 1)
+	{
+		aburrido = aburrido + 1;	
+	}
+	else if (numero == 2){
+		feliz = feliz + 1;
+		
+	}
+	else if (numero == 3){
+		sorprendido = sorprendido + 1;
+	}
+	else if (numero == 4)
+	{
+		neutro = neutro + 1;		
+	}
+	//log('#results', "Aburrido: " + aburrido);
+	//log('#results', "Feliz: " + feliz);
+	//log('#results', "Sorprendido: " + sorprendido);
+	//log('#results', "Neutro: " + neutro);
+} */
